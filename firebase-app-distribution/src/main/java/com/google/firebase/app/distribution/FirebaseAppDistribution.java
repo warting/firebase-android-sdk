@@ -14,6 +14,7 @@
 
 package com.google.firebase.app.distribution;
 
+import static com.google.firebase.app.distribution.FirebaseAppDistributionException.Status.AUTHENTICATION_CANCELED;
 import static com.google.firebase.app.distribution.FirebaseAppDistributionException.Status.AUTHENTICATION_FAILURE;
 import static com.google.firebase.app.distribution.TaskUtils.safeSetTaskException;
 import static com.google.firebase.app.distribution.TaskUtils.safeSetTaskResult;
@@ -53,6 +54,7 @@ public class FirebaseAppDistribution {
   private AlertDialog updateDialog;
   private boolean updateDialogShown;
   private final SignInStorage signInStorage;
+  private AlertDialog signInDialog;
 
   /** Constructor for FirebaseAppDistribution */
   @VisibleForTesting
@@ -134,6 +136,18 @@ public class FirebaseAppDistribution {
 
       cachedUpdateIfNewReleaseTask = new UpdateTaskImpl();
     }
+    if (isTesterSignedIn()) {
+      checkForNewReleaseWithProgressUpdates();
+    } else {
+      showSignInDialog(lifecycleNotifier.getCurrentActivity());
+    }
+
+    synchronized (updateTaskLock) {
+      return cachedUpdateIfNewReleaseTask;
+    }
+  }
+
+  private void checkForNewReleaseWithProgressUpdates() {
     checkForNewRelease()
         .onSuccessTask(
             release -> {
@@ -163,9 +177,6 @@ public class FirebaseAppDistribution {
                       Constants.ErrorMessages.NETWORK_ERROR,
                       FirebaseAppDistributionException.Status.NETWORK_FAILURE));
             });
-    synchronized (updateTaskLock) {
-      return cachedUpdateIfNewReleaseTask;
-    }
   }
 
   /** Signs in the App Distribution tester. Presents the tester with a Google sign in UI */
@@ -334,6 +345,28 @@ public class FirebaseAppDistribution {
     synchronized (updateTaskLock) {
       return cachedUpdateIfNewReleaseTask;
     }
+  }
+
+  private void showSignInDialog(Activity currentActivity) {
+    signInDialog = new AlertDialog.Builder(currentActivity).create();
+    Context context = firebaseApp.getApplicationContext();
+    signInDialog.setTitle(context.getString(R.string.signin_dialog_title));
+    signInDialog.setMessage(context.getString(R.string.singin_dialog_message));
+    signInDialog.setButton(
+        AlertDialog.BUTTON_POSITIVE,
+        context.getString(R.string.singin_yes_button),
+        (dialogInterface, i) -> checkForNewReleaseWithProgressUpdates());
+    signInDialog.setButton(
+        AlertDialog.BUTTON_NEGATIVE,
+        context.getString(R.string.singin_no_button),
+        (dialogInterface, i) -> {
+          LogWrapper.getInstance().v("Sign in has been canceled.");
+          setCachedUpdateIfNewReleaseCompletionError(
+              new FirebaseAppDistributionException(
+                  ErrorMessages.AUTHENTICATION_CANCELED, AUTHENTICATION_CANCELED));
+          dialogInterface.dismiss();
+        });
+    signInDialog.show();
   }
 
   private void setCachedUpdateIfNewReleaseCompletionError(FirebaseAppDistributionException e) {

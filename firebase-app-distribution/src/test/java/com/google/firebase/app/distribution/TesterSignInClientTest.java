@@ -142,12 +142,6 @@ public class TesterSignInClientTest {
 
     testerSignInClient.signInTester();
 
-    if (ShadowAlertDialog.getLatestDialog() instanceof AlertDialog) {
-      AlertDialog dialog = (AlertDialog) ShadowAlertDialog.getLatestDialog();
-      assertTrue(dialog.isShowing());
-      dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
-    }
-
     verify(mockFirebaseInstallations, times(1)).getId();
     assertThat(shadowActivity.getNextStartedActivity().getData()).isEqualTo(Uri.parse(TEST_URL));
   }
@@ -161,12 +155,6 @@ public class TesterSignInClientTest {
     shadowPackageManager.addResolveInfoForIntent(browserIntent, resolveInfo);
 
     testerSignInClient.signInTester();
-
-    if (ShadowAlertDialog.getLatestDialog() instanceof AlertDialog) {
-      AlertDialog dialog = (AlertDialog) ShadowAlertDialog.getLatestDialog();
-      assertTrue(dialog.isShowing());
-      dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
-    }
 
     verify(mockFirebaseInstallations, times(1)).getId();
     assertThat(shadowActivity.getNextStartedActivity().getData()).isEqualTo(Uri.parse(TEST_URL));

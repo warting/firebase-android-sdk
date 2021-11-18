@@ -223,6 +223,11 @@ public class FirebaseAppDistributionTest {
     when(mockUpdateAppClient.updateApp(newRelease, true)).thenReturn(new UpdateTaskImpl());
 
     firebaseAppDistribution.updateIfNewReleaseAvailable();
+    if (ShadowAlertDialog.getLatestDialog() instanceof AlertDialog) {
+      AlertDialog dialog = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+      assertTrue(dialog.isShowing());
+      dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+    }
 
     // Update flow
     verify(mockTesterSignInClient, times(1)).signInTester();
@@ -260,7 +265,7 @@ public class FirebaseAppDistributionTest {
 
   @Test
   public void updateToNewRelease_whenNoReleaseAvailable_updateDialogNotShown() {
-    when(mockSignInStorage.getSignInStatus()).thenReturn(false);
+    when(mockSignInStorage.getSignInStatus()).thenReturn(true);
     when(mockCheckForNewReleaseClient.checkForNewRelease()).thenReturn(Tasks.forResult(null));
     firebaseAppDistribution.setCachedNewRelease(null);
 
@@ -276,7 +281,7 @@ public class FirebaseAppDistributionTest {
 
   @Test
   public void updateToNewRelease_whenActivityBackgrounded_updateDialogNotShown() {
-    when(mockSignInStorage.getSignInStatus()).thenReturn(false);
+    when(mockSignInStorage.getSignInStatus()).thenReturn(true);
     when(mockCheckForNewReleaseClient.checkForNewRelease()).thenReturn(Tasks.forResult(null));
     firebaseAppDistribution.setCachedNewRelease(null);
     when(mockLifecycleNotifier.getCurrentActivity()).thenReturn(null);
@@ -302,7 +307,12 @@ public class FirebaseAppDistributionTest {
 
     UpdateTask task = firebaseAppDistribution.updateIfNewReleaseAvailable();
 
-    verify(mockTesterSignInClient, times(1)).signInTester();
+    if (ShadowAlertDialog.getLatestDialog() instanceof AlertDialog) {
+      AlertDialog dialog = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+      assertTrue(dialog.isShowing());
+      dialog.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+    }
+
     verify(mockCheckForNewReleaseClient, never()).checkForNewRelease();
     assertTrue(task.getException() instanceof FirebaseAppDistributionException);
     FirebaseAppDistributionException e = (FirebaseAppDistributionException) task.getException();
@@ -320,6 +330,13 @@ public class FirebaseAppDistributionTest {
                     ErrorMessages.AUTHENTICATION_ERROR, AUTHENTICATION_FAILURE)));
 
     UpdateTask task = firebaseAppDistribution.updateIfNewReleaseAvailable();
+
+    if (ShadowAlertDialog.getLatestDialog() instanceof AlertDialog) {
+      AlertDialog dialog = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+      assertTrue(dialog.isShowing());
+      dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+    }
+
     List<UpdateProgress> progressEvents = new ArrayList<>();
     task.addOnProgressListener(progressEvents::add);
 
@@ -334,6 +351,7 @@ public class FirebaseAppDistributionTest {
 
   @Test
   public void updateToNewRelease_whenCheckForUpdateFails_updateAppNotCalled() {
+    when(mockSignInStorage.getSignInStatus()).thenReturn(true);
     when(mockCheckForNewReleaseClient.checkForNewRelease())
         .thenReturn(
             Tasks.forException(
@@ -356,9 +374,17 @@ public class FirebaseAppDistributionTest {
 
   @Test
   public void updateToNewRelease_callsSignInTester() {
+    when(mockSignInStorage.getSignInStatus()).thenReturn(false).thenReturn(true);
     when(mockCheckForNewReleaseClient.checkForNewRelease())
         .thenReturn(Tasks.forResult(TEST_RELEASE_NEWER_AAB_INTERNAL.build()));
     firebaseAppDistribution.updateIfNewReleaseAvailable();
+
+    if (ShadowAlertDialog.getLatestDialog() instanceof AlertDialog) {
+      AlertDialog dialog = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+      assertTrue(dialog.isShowing());
+      dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+    }
+
     verify(mockTesterSignInClient, times(1)).signInTester();
   }
 
