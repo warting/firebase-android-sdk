@@ -41,6 +41,8 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import com.google.firebase.app.distribution.Constants.ErrorMessages;
+import com.google.firebase.app.distribution.FirebaseAppDistributionException.Status;
 import com.google.firebase.inject.Provider;
 import com.google.firebase.installations.FirebaseInstallationsApi;
 import com.google.firebase.installations.InstallationTokenResult;
@@ -188,9 +190,8 @@ public class NewReleaseFetcherTest {
     FirebaseAppDistributionException actualException =
         assertThrows(FirebaseAppDistributionException.class, onCompleteListener::await);
 
-    assertEquals(Constants.ErrorMessages.NETWORK_ERROR, actualException.getMessage());
-    assertEquals(
-        FirebaseAppDistributionException.Status.NETWORK_FAILURE, actualException.getErrorCode());
+    assertEquals(ErrorMessages.UNKNOWN_ERROR, actualException.getMessage());
+    assertEquals(Status.UNKNOWN, actualException.getErrorCode());
     assertEquals(expectedException, actualException.getCause());
   }
 
